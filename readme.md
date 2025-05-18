@@ -8,13 +8,14 @@ Auralis is a modern mixing assistant that makes live worship services sound prof
 - Real VST3 plugin chains for every channel
 - FX Buses for vocals, instruments, drums
 - Master Bus loudness optimization
-- One-knob vocal tuning
+- One-knob vocal tuning with basic pitch detection
 - Manual and assisted input routing
 - Subscription management and offline grace period
 
 ## Technologies
 - JUCE Framework (C++)
 - Modular DSP architecture
+- Advanced smoothing in DSP algorithms for artifact-free parameter changes
 - Lightweight tone fingerprint analysis (no heavy ML yet)
 - Stripe for subscription management
 

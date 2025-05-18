@@ -46,7 +46,7 @@ public:
 private:
     // DSP components
     static constexpr auto maxDelayTimeMs = 800.0f;
-    using DelayLineType = juce::dsp::DelayLine<float>;
+    using DelayLineType = juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>;
     
     DelayLineType delayLine;
     float delayTimeMs = 350.0f;    // Default 350ms
@@ -55,4 +55,9 @@ private:
     
     double sampleRate = 44100.0;
     float lastInputSample[2] = {0.0f, 0.0f};  // For feedback calculation
+
+    // Smoothed parameters for click-free modulation
+    juce::SmoothedValue<float> delayTimeMsSmoothed;
+    juce::SmoothedValue<float> feedbackSmoothed;
+    juce::SmoothedValue<float> wetLevelSmoothed;
 }; 

@@ -41,4 +41,6 @@ public:
 private:
     float gainLinear = 1.0f;
     juce::dsp::Gain<float> gain;
+
+    juce::SmoothedValue<float> gainSmoothed { 1.0f };
 }; 

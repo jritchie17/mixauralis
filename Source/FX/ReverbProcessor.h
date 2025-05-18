@@ -49,6 +49,12 @@ private:
     juce::dsp::Reverb reverb;
     juce::dsp::Reverb::Parameters parameters;
     double sampleRate = 44100.0;
-    
+
+    // Smoothed parameters for smooth reverb modulation
+    juce::SmoothedValue<float> roomSizeSmoothed { 0.5f };
+    juce::SmoothedValue<float> dampingSmoothed { 0.4f };
+    juce::SmoothedValue<float> widthSmoothed { 1.0f };
+    juce::SmoothedValue<float> wetLevelSmoothed { 0.25f };
+
     void updateParameters();
 }; 

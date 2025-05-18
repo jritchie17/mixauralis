@@ -37,8 +37,18 @@ namespace auralis
         float getStrength() const noexcept  { return strength.load(); }
 
     private:
+        float detectPitch (const float* data, int numSamples) const;
+        void pitchShiftChannel (const float* input, float* output,
+                                int numSamples, int channel, float ratio);
+
         std::atomic<float> strength { 0.5f };   // 0 = dry, 1 = full-tune
         juce::AudioBuffer<float> dryBuffer;     // Buffer for storing dry signal
+        juce::AudioBuffer<float> tunedBuffer;   // Buffer for pitch-shifted signal
+
+        juce::SmoothedValue<float> strengthSmoothed { 0.5f };
+        double sampleRate = 44100.0;
+        float readIndex[2] { 0.0f, 0.0f };
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TunerProcessor)
     };
 } 

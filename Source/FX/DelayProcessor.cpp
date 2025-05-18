@@ -28,9 +28,17 @@ void DelayProcessor::prepareToPlay(double sampleRate, int maximumExpectedSamples
     spec.numChannels = getTotalNumOutputChannels();
     
     delayLine.prepare(spec);
-    
+
     // Set the initial delay time
     delayLine.setDelay(delayTimeMs * 0.001f * sampleRate);
+
+    // Initialize smoothed parameters
+    delayTimeMsSmoothed.reset(sampleRate, 0.05);
+    delayTimeMsSmoothed.setCurrentAndTargetValue(delayTimeMs);
+    feedbackSmoothed.reset(sampleRate, 0.05);
+    feedbackSmoothed.setCurrentAndTargetValue(feedbackLevel);
+    wetLevelSmoothed.reset(sampleRate, 0.05);
+    wetLevelSmoothed.setCurrentAndTargetValue(wetLevel);
 }
 
 void DelayProcessor::releaseResources()
@@ -53,24 +61,32 @@ void DelayProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBu
     for (int channel = 0; channel < numChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer(channel);
-        
+
         for (int sample = 0; sample < numSamples; ++sample)
         {
+            // Get smoothed parameter values for this sample
+            float delaySamples = delayTimeMsSmoothed.getNextValue() * 0.001f * sampleRate;
+            float fb = feedbackSmoothed.getNextValue();
+            float wet = wetLevelSmoothed.getNextValue();
+
+            // Set delay time with interpolation
+            delayLine.setDelay(delaySamples);
+
             // Get the current input sample
             float inputSample = channelData[sample];
-            
+
             // Read from the delay line
             float delaySample = delayLine.popSample(channel);
-            
+
             // Calculate the output sample with feedback
-            float outputSample = inputSample + (delaySample * feedbackLevel);
-            
+            float outputSample = inputSample + (delaySample * fb);
+
             // Push the output sample back into the delay line
             delayLine.pushSample(channel, outputSample);
-            
+
             // Mix the delayed signal with the original signal
-            channelData[sample] = dryBuffer.getSample(channel, sample) + (delaySample * wetLevel);
-            
+            channelData[sample] = dryBuffer.getSample(channel, sample) + (delaySample * wet);
+
             // Store the input sample for the next iteration
             lastInputSample[channel] = inputSample;
         }
@@ -80,18 +96,19 @@ void DelayProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBu
 void DelayProcessor::setDelayTimeMs(float delayMs)
 {
     delayTimeMs = juce::jlimit(10.0f, maxDelayTimeMs, delayMs);
-    
-    // Update the delay time in the delay line
-    if (sampleRate > 0)
-        delayLine.setDelay(delayTimeMs * 0.001f * sampleRate);
+
+    // Update smoothed value target
+    delayTimeMsSmoothed.setTargetValue(delayTimeMs);
 }
 
 void DelayProcessor::setFeedback(float feedback)
 {
     feedbackLevel = juce::jlimit(0.0f, 0.9f, feedback);
+    feedbackSmoothed.setTargetValue(feedbackLevel);
 }
 
 void DelayProcessor::setWetLevel(float wet)
 {
     wetLevel = juce::jlimit(0.0f, 1.0f, wet);
-} 
+    wetLevelSmoothed.setTargetValue(wetLevel);
+}

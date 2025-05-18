@@ -23,6 +23,9 @@ void TrimProcessor::prepareToPlay(double sampleRate, int maximumExpectedSamplesP
     
     gain.prepare(spec);
     gain.setGainLinear(gainLinear);
+
+    gainSmoothed.reset(sampleRate, 0.02);
+    gainSmoothed.setCurrentAndTargetValue(gainLinear);
 }
 
 void TrimProcessor::releaseResources()
@@ -37,11 +40,15 @@ void TrimProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuf
     // Process using the gain module
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
+
+    gainSmoothed.skip(block.getNumSamples());
+    gain.setGainLinear(gainSmoothed.getCurrentValue());
+
     gain.process(context);
 }
 
 void TrimProcessor::setGainLinear(float newGain)
 {
     gainLinear = newGain;
-    gain.setGainLinear(gainLinear);
-} 
+    gainSmoothed.setTargetValue(gainLinear);
+}
