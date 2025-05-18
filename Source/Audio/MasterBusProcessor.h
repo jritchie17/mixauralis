@@ -57,21 +57,32 @@ public:
     bool isLimiterEnabled() const { return limiterEnabled; }
     bool isCompressorEnabled() const { return compressorEnabled; }
     
-    // Get the current LUFS level (placeholder implementation)
+    /**
+        Returns the LUFS loudness measured for the last processed audio block.
+
+        The value is calculated using a simple K‑weighted RMS measurement via
+        JUCE DSP filters and is updated each time `processBlock` is called.
+    */
     float getCurrentLufs() const { return currentLufs; }
     
     // Get the current stream target
     StreamTarget getStreamTarget() const { return currentTarget; }
     
 private:
-    // Internal placeholder processors
+    // Internal processors
     std::unique_ptr<MultibandCompressorProcessor> compressor;
     std::unique_ptr<auralis::TruePeakLimiterProcessor> limiter;
     auralis::LoudnessMeterComponent* meter { nullptr };
+
+    // Filters used for K-weighted loudness measurement
+    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                                 juce::dsp::IIR::Coefficients<float>>;
+    Filter hpFilters[2];
+    Filter shelfFilters[2];
     
     // Current state
     std::atomic<float> targetLufs{kLUFS_Youtube};
-    float currentLufs = -18.0f; // Placeholder value
+    float currentLufs = -18.0f; // Updated each block
     bool compressorEnabled = true;
     bool limiterEnabled = true;
     StreamTarget currentTarget = StreamTarget::YouTube;

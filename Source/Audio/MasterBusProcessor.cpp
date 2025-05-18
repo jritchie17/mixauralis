@@ -148,7 +148,19 @@ void MasterBusProcessor::prepareToPlay(double sampleRate, int maximumExpectedSam
     // Prepare internal processors
     compressor->prepare(sampleRate, maximumExpectedSamplesPerBlock);
     limiter->prepareToPlay(sampleRate, maximumExpectedSamplesPerBlock);
-    
+
+    auto hp  = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, 40.0f);
+    auto sh  = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, 4000.0f,
+                                                                  0.7071f,
+                                                                  juce::Decibels::decibelsToGain(4.0f));
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        *hpFilters[ch].coefficients    = *hp;
+        *shelfFilters[ch].coefficients = *sh;
+        hpFilters[ch].reset();
+        shelfFilters[ch].reset();
+    }
+
     juce::Logger::writeToLog("MasterBusProcessor prepared with sample rate: " + juce::String(sampleRate));
 }
 
@@ -175,12 +187,25 @@ void MasterBusProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     if (meter != nullptr)
         meter->pushSamples(buffer);
     
-    // For now, we're just simulating LUFS measurement
-    // In a real implementation, we'd calculate LUFS from the buffer here
-    
-    // Just a simple placeholder implementation to show changes in the UI
-    // Simulating some variation in the measured LUFS
-    currentLufs = targetLufs + (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) - 0.5f) * 2.0f;
+    // Calculate K-weighted loudness (LUFS)
+    juce::AudioBuffer<float> temp (buffer);
+    for (int ch = 0; ch < temp.getNumChannels(); ++ch)
+    {
+        hpFilters[ch].processSamples   (temp.getWritePointer(ch), temp.getNumSamples());
+        shelfFilters[ch].processSamples(temp.getWritePointer(ch), temp.getNumSamples());
+    }
+
+    double sumSquares = 0.0;
+    for (int ch = 0; ch < temp.getNumChannels(); ++ch)
+    {
+        const float* data = temp.getReadPointer(ch);
+        for (int i = 0; i < temp.getNumSamples(); ++i)
+            sumSquares += static_cast<double>(data[i]) * static_cast<double>(data[i]);
+    }
+
+    const double meanSquare = sumSquares / (temp.getNumSamples() * temp.getNumChannels());
+    const double rms = std::sqrt(meanSquare);
+    currentLufs = static_cast<float>(juce::Decibels::gainToDecibels(rms) - 0.691f);
 }
 
 void MasterBusProcessor::setTargetLufs(float targetLUFS) noexcept
