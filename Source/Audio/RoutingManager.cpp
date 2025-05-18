@@ -39,6 +39,10 @@ void RoutingManager::initialize(const std::vector<std::unique_ptr<ChannelProcess
         }
         
         channelToFxBusMap[static_cast<int>(i)] = busType;
+
+        // Store the bus pointer in the channel processor for quick updates
+        if (auto* bus = findFxBusProcessor(busType))
+            channelProcs[i]->setFxBusProcessor(bus);
         
         // Log the initial mapping
         juce::Logger::writeToLog("Channel " + juce::String(i) + " mapped to FX bus: " +

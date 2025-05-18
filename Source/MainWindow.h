@@ -27,10 +27,13 @@ public:
         setResizable(true, true);
     }
 
-    void closeButtonPressed() override 
-    { 
-        juce::JUCEApplication::getInstance()->systemRequestedQuit(); 
+    void closeButtonPressed() override
+    {
+        juce::JUCEApplication::getInstance()->systemRequestedQuit();
     }
+
+    /** Provide access to the main component for other modules. */
+    MainComponent* getMainComponent() const { return mainComponent.get(); }
     
 private:
     std::unique_ptr<MainComponent> mainComponent;
