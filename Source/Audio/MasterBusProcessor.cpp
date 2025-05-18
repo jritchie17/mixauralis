@@ -1,34 +1,129 @@
 #include "MasterBusProcessor.h"
 
-// Placeholder internal processors
-class MultibandCompressorProcessor 
+//==============================================================================
+// Internal multiband compressor used by the master bus
+//==============================================================================
+class MultibandCompressorProcessor
 {
 public:
-    MultibandCompressorProcessor() {}
-    ~MultibandCompressorProcessor() {}
-    
-    void prepare(double sampleRate, int maximumBlockSize) {}
-    void process(juce::AudioBuffer<float>& buffer) {}
-    void reset() {}
-    void setEnabled(bool enabled) { isEnabled = enabled; }
-    
-private:
-    bool isEnabled = true;
-};
+    MultibandCompressorProcessor() = default;
 
-class TruePeakLimiterProcessor 
-{
-public:
-    TruePeakLimiterProcessor() {}
-    ~TruePeakLimiterProcessor() {}
-    
-    void prepare(double sampleRate, int maximumBlockSize) {}
-    void process(juce::AudioBuffer<float>& buffer) {}
-    void reset() {}
-    void setEnabled(bool enabled) { isEnabled = enabled; }
-    
+    void prepare (double sampleRate, int maximumBlockSize)
+    {
+        spec.sampleRate       = sampleRate;
+        spec.maximumBlockSize = static_cast<juce::uint32> (maximumBlockSize);
+        spec.numChannels      = 2;
+
+        // Configure filters
+        updateFilters (sampleRate);
+
+        for (auto& comp : compressors)
+            comp.prepare (spec);
+    }
+
+    void reset()
+    {
+        for (auto& comp : compressors)
+            comp.reset();
+
+        for (auto& filter : lowFilters)
+            filter.reset();
+        for (auto& filter : highFilters)
+            filter.reset();
+        for (auto& filter : midLowFilters)
+            filter.reset();
+        for (auto& filter : midHighFilters)
+            filter.reset();
+    }
+
+    void process (juce::AudioBuffer<float>& buffer)
+    {
+        if (! isEnabled)
+            return;
+
+        const int numSamples = buffer.getNumSamples();
+
+        // Prepare temporary buffers for each band
+        juce::AudioBuffer<float> low  (buffer.getNumChannels(), numSamples);
+        juce::AudioBuffer<float> mid  (buffer.getNumChannels(), numSamples);
+        juce::AudioBuffer<float> high (buffer.getNumChannels(), numSamples);
+
+        low.makeCopyOf  (buffer);
+        mid.makeCopyOf  (buffer);
+        high.makeCopyOf (buffer);
+
+        // Split into bands using simple second order filters
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        {
+            auto* lowData  = low.getWritePointer (ch);
+            auto* midData  = mid.getWritePointer (ch);
+            auto* highData = high.getWritePointer (ch);
+
+            lowFilters[ch].processSamples      (lowData, numSamples);
+            highFilters[ch].processSamples     (highData, numSamples);
+
+            midHighFilters[ch].processSamples  (midData, numSamples);
+            midLowFilters[ch].processSamples   (midData, numSamples);
+        }
+
+        // Run each band through its compressor
+        processBand (low,  compressors[0]);
+        processBand (mid,  compressors[1]);
+        processBand (high, compressors[2]);
+
+        // Sum bands back into the output buffer
+        buffer.clear();
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        {
+            buffer.addFrom (ch, 0, low,  ch, 0, numSamples);
+            buffer.addFrom (ch, 0, mid,  ch, 0, numSamples);
+            buffer.addFrom (ch, 0, high, ch, 0, numSamples);
+        }
+    }
+
+    void setEnabled (bool enabled) noexcept  { isEnabled = enabled; }
+
 private:
-    bool isEnabled = true;
+    void updateFilters (double sampleRate)
+    {
+        auto lowLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass  (sampleRate, lowCrossoverHz);
+        auto highHP = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, highCrossoverHz);
+        auto midHP  = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, lowCrossoverHz);
+        auto midLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass  (sampleRate, highCrossoverHz);
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            *lowFilters[ch].coefficients      = *lowLP;
+            *highFilters[ch].coefficients     = *highHP;
+            *midLowFilters[ch].coefficients   = *midLP;
+            *midHighFilters[ch].coefficients  = *midHP;
+        }
+    }
+
+    static void processBand (juce::AudioBuffer<float>& bandBuffer, juce::dsp::Compressor<float>& comp)
+    {
+        juce::dsp::AudioBlock<float> block (bandBuffer);
+        juce::dsp::ProcessContextReplacing<float> context (block);
+        comp.process (context);
+    }
+
+    //==========================================================================
+    juce::dsp::ProcessSpec spec;
+
+    static constexpr float lowCrossoverHz  = 200.0f;
+    static constexpr float highCrossoverHz = 2000.0f;
+
+    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                                  juce::dsp::IIR::Coefficients<float>>;
+
+    Filter lowFilters [2];
+    Filter highFilters[2];
+    Filter midLowFilters [2];
+    Filter midHighFilters[2];
+
+    juce::dsp::Compressor<float> compressors[3];
+
+    bool isEnabled { true };
 };
 
 //==============================================================================
