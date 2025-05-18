@@ -3,14 +3,16 @@
 #include "FXBusesComponent.h"
 #include "MasterBusComponent.h"
 #include "RoutingComponent.h"
+#include "../Utils/StyleManager.h"
 
 MainComponent::MainComponent()
 {
     juce::Logger::writeToLog("MainComponent constructor start");
     
-    // Set the custom look and feel
-    setLookAndFeel(&blackwayLookAndFeel);
-    tabbedComponent.setLookAndFeel(&blackwayLookAndFeel);
+    // Use the global look and feel managed by StyleManager
+    auto& lf = StyleManager::getInstance().getLookAndFeel();
+    setLookAndFeel(&lf);
+    tabbedComponent.setLookAndFeel(&lf);
     
     // Load background image
     auto assetsDir = juce::File::getCurrentWorkingDirectory().getChildFile("Assets");

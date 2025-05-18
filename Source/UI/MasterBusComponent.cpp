@@ -1,12 +1,13 @@
 #include "MasterBusComponent.h"
+#include "../Utils/StyleManager.h"
 
 MasterBusComponent::MasterBusComponent(MasterBusProcessor* processor)
     : masterProcessor(processor)
 {
     juce::Logger::writeToLog("MasterBusComponent constructor start");
     
-    // Set up the look and feel
-    setLookAndFeel(&blackwayLookAndFeel);
+    // Use global look and feel for consistency
+    setLookAndFeel(&StyleManager::getInstance().getLookAndFeel());
     
     // Load background image
     auto assetsDir = juce::File::getCurrentWorkingDirectory().getChildFile("Assets");
@@ -17,21 +18,21 @@ MasterBusComponent::MasterBusComponent(MasterBusProcessor* processor)
     
     // Output meter label
     outputMeterLabel.setText("OUTPUT", juce::dontSendNotification);
-    outputMeterLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(14.0f).boldened());
+    outputMeterLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(14.0f).boldened());
     outputMeterLabel.setJustificationType(juce::Justification::centred);
     outputMeterLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(outputMeterLabel);
     
     // Current LUFS display
     currentLufsLabel.setText("CURRENT: -18.0 LUFS", juce::dontSendNotification);
-    currentLufsLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(14.0f));
+    currentLufsLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(14.0f));
     currentLufsLabel.setJustificationType(juce::Justification::centredLeft);
     currentLufsLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(currentLufsLabel);
     
     // Target LUFS display
     targetLufsLabel.setText("TARGET: -14.0 LUFS", juce::dontSendNotification);
-    targetLufsLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(14.0f));
+    targetLufsLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(14.0f));
     targetLufsLabel.setJustificationType(juce::Justification::centredLeft);
     targetLufsLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(targetLufsLabel);
@@ -103,7 +104,7 @@ MasterBusComponent::MasterBusComponent(MasterBusProcessor* processor)
     
     // Set up custom LUFS label
     customLufsLabel.setText("Custom LUFS", juce::dontSendNotification);
-    customLufsLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(14.0f));
+    customLufsLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(14.0f));
     customLufsLabel.setJustificationType(juce::Justification::centredLeft);
     customLufsLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     customLufsLabel.setVisible(false);
@@ -143,7 +144,7 @@ void MasterBusComponent::paint(juce::Graphics& g)
     
     // Draw section headers
     g.setColour(juce::Colours::white);
-    g.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(16.0f).boldened());
+    g.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(16.0f).boldened());
     g.drawText("MASTER BUS", 20, 10, 200, 30, juce::Justification::left);
     g.drawText("TARGET LOUDNESS", 20, 240, 200, 30, juce::Justification::left);
     g.drawText("PROCESSING", 20, 360, 200, 30, juce::Justification::left);

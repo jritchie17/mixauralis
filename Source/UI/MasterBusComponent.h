@@ -4,7 +4,7 @@
 #include "../Audio/MasterBusProcessor.h"
 #include "LevelMeter.h"
 #include "LoudnessMeterComponent.h"
-#include "../Utils/BlackwayLookAndFeel.h"
+#include "../Utils/StyleManager.h"
 
 class MasterBusComponent : public juce::Component,
                            private juce::Timer
@@ -46,8 +46,7 @@ private:
     juce::Slider customLufsSlider;
     juce::Label customLufsLabel;
     
-    // Custom look and feel
-    BlackwayLookAndFeel blackwayLookAndFeel;
+
     
     // Loudness meter
     std::unique_ptr<auralis::LoudnessMeterComponent> meter;

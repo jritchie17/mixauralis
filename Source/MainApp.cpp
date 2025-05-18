@@ -2,6 +2,7 @@
 #include "UI/MainComponent.h"
 #include "MainWindow.h"
 #include "Tests/SessionRoundTripTest.h"
+#include "Utils/StyleManager.h"
 
 namespace {
     void logToStderr(const juce::String& message)
@@ -63,7 +64,10 @@ namespace {
 void MainApp::initialise(const juce::String& commandLine)
 {
     logToStderr("Creating main window");
-    
+
+    // Apply global look and feel so all components share the same style
+    StyleManager::getInstance().applyGlobalLookAndFeel();
+
     // Register commands
     commandManager.registerAllCommandsForTarget(this);
     

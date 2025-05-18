@@ -2,12 +2,13 @@
 #include "LevelMeter.h"
 #include "ChannelsComponent.h"
 #include "../Audio/AudioEngine.h"
+#include "../Utils/StyleManager.h"
 
 ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* parent)
     : parentComponent(parent), channelIndex(index)
 {
-    // Apply custom look and feel
-    setLookAndFeel(&blackwayLookAndFeel);
+    // Use the global look and feel
+    setLookAndFeel(&StyleManager::getInstance().getLookAndFeel());
     
     // Load background image
     auto assetsDir = juce::File::getCurrentWorkingDirectory().getChildFile("Assets");
@@ -34,14 +35,14 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     // Channel index label setup
     indexLabel.setText("--", juce::dontSendNotification);
     indexLabel.setJustificationType(juce::Justification::centredLeft);
-    indexLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(14.0f).boldened());
+    indexLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(14.0f).boldened());
     indexLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(indexLabel);
     
     // Name Label setup
     nameLabel.setText(channelName, juce::dontSendNotification);
     nameLabel.setJustificationType(juce::Justification::centredLeft);
-    nameLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(12.0f).boldened());
+    nameLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(12.0f).boldened());
     nameLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(nameLabel);
     
@@ -55,13 +56,13 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     
     trimLabel.setText("Trim", juce::dontSendNotification);
     trimLabel.setJustificationType(juce::Justification::centred);
-    trimLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    trimLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     trimLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(trimLabel);
     
     trimValueLabel.setText("0 dB", juce::dontSendNotification);
     trimValueLabel.setJustificationType(juce::Justification::centred);
-    trimValueLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    trimValueLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     trimValueLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
     addAndMakeVisible(trimValueLabel);
     
@@ -72,7 +73,7 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     
     gateLabel.setText("Gate", juce::dontSendNotification);
     gateLabel.setJustificationType(juce::Justification::centred);
-    gateLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    gateLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     gateLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(gateLabel);
     
@@ -83,7 +84,7 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     
     compLabel.setText("Comp", juce::dontSendNotification);
     compLabel.setJustificationType(juce::Justification::centred);
-    compLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    compLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     compLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(compLabel);
     
@@ -102,13 +103,13 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     
     fxSendLabel.setText("FX Send", juce::dontSendNotification);
     fxSendLabel.setJustificationType(juce::Justification::centred);
-    fxSendLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    fxSendLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     fxSendLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(fxSendLabel);
     
     fxSendValueLabel.setText("0 %", juce::dontSendNotification);
     fxSendValueLabel.setJustificationType(juce::Justification::centred);
-    fxSendValueLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    fxSendValueLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     fxSendValueLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
     addAndMakeVisible(fxSendValueLabel);
     
@@ -120,7 +121,7 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     
     tunerLabel.setText("Tuner", juce::dontSendNotification);
     tunerLabel.setJustificationType(juce::Justification::centred);
-    tunerLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    tunerLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     tunerLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     tunerLabel.setVisible(false); // Initially hidden
     addAndMakeVisible(tunerLabel);
@@ -136,7 +137,7 @@ ChannelStripComponent::ChannelStripComponent(int index, ChannelsComponent* paren
     
     tunerValueLabel.setText("50 %", juce::dontSendNotification);
     tunerValueLabel.setJustificationType(juce::Justification::centred);
-    tunerValueLabel.setFont(blackwayLookAndFeel.getRobotoFont().withHeight(10.0f));
+    tunerValueLabel.setFont(StyleManager::getInstance().getLookAndFeel().getRobotoFont().withHeight(10.0f));
     tunerValueLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
     tunerValueLabel.setVisible(false); // Initially hidden
     addAndMakeVisible(tunerValueLabel);

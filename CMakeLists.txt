@@ -66,6 +66,8 @@ target_sources(Auralis PRIVATE
     Source/State/SessionManager.h
     Source/State/SessionManager.cpp
     Source/Utils/BlackwayLookAndFeel.h
+    Source/Utils/StyleManager.cpp
+    Source/Utils/StyleManager.h
     Source/FX/TrimProcessor.cpp
     Source/FX/TrimProcessor.h
     Source/FX/GateProcessor.cpp
