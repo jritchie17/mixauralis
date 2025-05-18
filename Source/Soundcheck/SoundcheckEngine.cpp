@@ -1,4 +1,5 @@
 #include "SoundcheckEngine.h"
+#include <limits>
 
 // Singleton instance implementation
 SoundcheckEngine& SoundcheckEngine::getInstance()
@@ -256,7 +257,10 @@ void SoundcheckEngine::analyzeCurrentChannelBuffer()
     
     // Map FFT data to 1/3 octave bands
     mapFFTToThirdOctaveBands(fftFrequencyDomain, analysis.measuredMagnitudes);
-    
+
+    // Classify channel type based on spectral profile
+    analysis.suggestedType = classifyChannel(analysis.measuredMagnitudes);
+
     // Calculate suggested corrections based on reference profiles
     calculateCorrections(currentChannelIndex);
     
@@ -332,9 +336,9 @@ void SoundcheckEngine::calculateCorrections(int channelIndex)
     auto& analysis = channelAnalyses[channelIndex];
     auto* processor = channelProcessors[channelIndex];
     
-    // Convert processor's channel type to ChannelStripComponent type
+    // Convert suggested type to ChannelStripComponent type
     ChannelStripComponent::ChannelType channelType;
-    switch (processor->getChannelType())
+    switch (analysis.suggestedType)
     {
         case ChannelProcessor::ChannelType::Vocal:
             channelType = ChannelStripComponent::ChannelType::SingingVocal;
@@ -430,8 +434,9 @@ void SoundcheckEngine::backupOriginalSettings(int channelIndex)
     
     auto& analysis = channelAnalyses[channelIndex];
     auto* processor = channelProcessors[channelIndex];
-    
+
     // Store original settings
+    analysis.originalType = processor->getChannelType();
     analysis.originalTrimGain = processor->getTrimGain();
     analysis.originalGateThreshold = processor->getGateThreshold();
     
@@ -462,7 +467,20 @@ void SoundcheckEngine::applyCorrections()
         
         // Get analysis data
         const auto& analysis = channelAnalyses[i];
-        
+
+        // Update processor channel type based on analysis
+        processor->setChannelType(analysis.suggestedType);
+
+        juce::String typeStr;
+        switch (analysis.suggestedType)
+        {
+            case ChannelProcessor::ChannelType::Vocal:      typeStr = "Vocal"; break;
+            case ChannelProcessor::ChannelType::Instrument: typeStr = "Instrument"; break;
+            case ChannelProcessor::ChannelType::Drums:      typeStr = "Drums"; break;
+            default:                                       typeStr = "Other"; break;
+        }
+        juce::Logger::writeToLog("Channel " + juce::String(i) + " classified as " + typeStr);
+
         // Apply trim gain
         processor->setTrimGain(analysis.trimGainSuggestion);
         
@@ -514,6 +532,7 @@ void SoundcheckEngine::revertCorrections()
         const auto& analysis = channelAnalyses[i];
         
         // Restore original settings
+        processor->setChannelType(analysis.originalType);
         processor->setTrimGain(analysis.originalTrimGain);
         processor->setGateThreshold(analysis.originalGateThreshold);
         
@@ -574,4 +593,41 @@ void SoundcheckEngine::run()
         // Assert if it took too long
         jassert(elapsedMs < 60000); // Must complete in under 60 seconds
     }
-} 
+}
+
+ChannelProcessor::ChannelType SoundcheckEngine::classifyChannel(const juce::Array<float>& magnitudes) const
+{
+    using StripType = ChannelStripComponent::ChannelType;
+
+    struct TypeMap { StripType strip; ChannelProcessor::ChannelType proc; };
+    const TypeMap types[] = {
+        {StripType::SingingVocal,   ChannelProcessor::ChannelType::Vocal},
+        {StripType::Speech,         ChannelProcessor::ChannelType::Vocal},
+        {StripType::Instrument,     ChannelProcessor::ChannelType::Instrument},
+        {StripType::Drums,          ChannelProcessor::ChannelType::Drums},
+        {StripType::Other,          ChannelProcessor::ChannelType::Other}
+    };
+
+    ChannelProcessor::ChannelType best = ChannelProcessor::ChannelType::Other;
+    float bestScore = std::numeric_limits<float>::max();
+
+    for (const auto& t : types)
+    {
+        const auto& profile = getProfileFor(t.strip);
+        float score = 0.0f;
+        const int n = juce::jmin(magnitudes.size(), profile.refMagnitudes.size());
+        for (int i = 0; i < n; ++i)
+        {
+            const float diff = profile.refMagnitudes[i] - magnitudes[i];
+            score += diff * diff;
+        }
+
+        if (score < bestScore)
+        {
+            bestScore = score;
+            best = t.proc;
+        }
+    }
+
+    return best;
+}

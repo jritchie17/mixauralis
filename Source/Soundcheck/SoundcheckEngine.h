@@ -47,6 +47,10 @@ public:
         float originalGateThreshold = -50.0f;
         float originalEqGains[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         float originalCompressorRatio = 1.0f;
+        ChannelProcessor::ChannelType originalType = ChannelProcessor::ChannelType::Other;
+
+        // Suggested channel type based on analysis
+        ChannelProcessor::ChannelType suggestedType = ChannelProcessor::ChannelType::Other;
     };
     
     // Public API
@@ -113,6 +117,7 @@ private:
     void calculateCorrections(int channelIndex);
     void backupOriginalSettings(int channelIndex);
     void mapFFTToThirdOctaveBands(const float* fftData, juce::Array<float>& bandMagnitudes);
+    ChannelProcessor::ChannelType classifyChannel(const juce::Array<float>& magnitudes) const;
 };
 
 // Callback class to capture audio for analysis
