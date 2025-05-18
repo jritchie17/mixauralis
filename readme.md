@@ -26,3 +26,7 @@ Auralis is a modern mixing assistant that makes live worship services sound prof
 
 ## Getting Started
 See `DEV_PLAN.md` for detailed architecture and setup.
+
+The build assumes JUCE is located in `../JUCE` relative to this repository. If
+your JUCE copy lives elsewhere, pass `-DJUCE_PATH=/path/to/JUCE` to CMake when
+configuring the project.
