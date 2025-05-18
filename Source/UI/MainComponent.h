@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "../Utils/BlackwayLookAndFeel.h"
+#include "../Utils/StyleManager.h"
 #include "../Audio/AudioEngine.h"
 #include "../Audio/MasterBusProcessor.h"
 #include "SettingsComponent.h"
@@ -19,7 +19,6 @@ public:
     void resized() override;
 
 private:
-    BlackwayLookAndFeel blackwayLookAndFeel;
     juce::Image backgroundImage;
     
     // Audio processors

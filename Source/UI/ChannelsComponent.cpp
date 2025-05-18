@@ -1,12 +1,14 @@
 #include "ChannelsComponent.h"
 #include "../MainApp.h"
 #include "../../Subscription/SubscriptionManager.h"
+#include "../Utils/StyleManager.h"
 
 ChannelsComponent::ChannelsComponent()
 {
-    // Apply custom look and feel
-    setLookAndFeel(&blackwayLookAndFeel);
-    horizontalScrollbar.setLookAndFeel(&blackwayLookAndFeel);
+    // Use global look and feel for consistency
+    auto& lf = StyleManager::getInstance().getLookAndFeel();
+    setLookAndFeel(&lf);
+    horizontalScrollbar.setLookAndFeel(&lf);
     
     // Load background image
     auto assetsDir = juce::File::getCurrentWorkingDirectory().getChildFile("Assets");

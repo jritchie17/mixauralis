@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 #include "ChannelStripComponent.h"
 #include "../Audio/AudioEngine.h"
-#include "../Utils/BlackwayLookAndFeel.h"
+#include "../Utils/StyleManager.h"
 
 class ChannelsComponent : public juce::Component,
                           private juce::ScrollBar::Listener
@@ -26,7 +26,6 @@ private:
     static constexpr int channelStripWidth = ChannelStripComponent::kStandardWidth;
     static constexpr int viewportMargin = ChannelStripComponent::kStandardPadding;
     
-    BlackwayLookAndFeel blackwayLookAndFeel;
     juce::Image backgroundImage;
     
     std::vector<std::unique_ptr<ChannelStripComponent>> channelStrips;

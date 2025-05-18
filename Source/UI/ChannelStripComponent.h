@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../Audio/ChannelProcessor.h"
-#include "../Utils/BlackwayLookAndFeel.h"
+#include "../Utils/StyleManager.h"
 
 // Forward declaration for cross-referencing
 class ChannelsComponent;
@@ -78,8 +78,7 @@ private:
     // Pointer to parent component for selection notification
     ChannelsComponent* parentComponent = nullptr;
     
-    // Custom look and feel
-    BlackwayLookAndFeel blackwayLookAndFeel;
+    // Custom look and feel is provided globally by StyleManager
     
     // UI Components
     juce::Label nameLabel;
