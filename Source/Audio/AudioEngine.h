@@ -43,6 +43,12 @@ public:
     
     // Setup audio device manager
     bool setupAudioDevices();
+
+    /** Save the current audio device state to disk. */
+    void saveAudioDeviceState() const;
+
+    /** Restore audio device state from disk if available. */
+    void loadAudioDeviceState();
     
     // Set channel send level
     void setChannelSendLevel(int channelIndex, float sendLevel);

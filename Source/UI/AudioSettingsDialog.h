@@ -1,10 +1,12 @@
 #pragma once
 #include <JuceHeader.h>
+#include "../Utils/BlackwayLookAndFeel.h"
 
 namespace auralis
 {
-    /** Simple modal window that will host the JUCE AudioDeviceSelectorComponent.
-        Implementation will follow in a later step. */
+    /** Modal dialog hosting a JUCE AudioDeviceSelectorComponent allowing the
+        user to configure input and output devices.  The current device
+        settings are saved and restored automatically. */
     class AudioSettingsDialog : public juce::DialogWindow
     {
     public:
@@ -15,6 +17,8 @@ namespace auralis
 
     private:
         juce::AudioDeviceManager& deviceManager;
+        juce::AudioDeviceSelectorComponent* selector = nullptr;
+        BlackwayLookAndFeel lookAndFeel;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioSettingsDialog)
     };
 } 

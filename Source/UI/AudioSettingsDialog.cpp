@@ -6,22 +6,36 @@ namespace auralis
         : juce::DialogWindow ("Audio Settings", juce::Colours::darkgrey, true),
           deviceManager (adm)
     {
-        // Create selector: wantInput=true, wantOutput=true, showMidi=false
-        auto selector = std::make_unique<juce::AudioDeviceSelectorComponent>(
-                            deviceManager,
-                            /* minInput */   0,  /* maxInput */   256,
-                            /* minOutput */  0,  /* maxOutput */  256,
-                            /* showMidi */ false,
-                            /* includeBuiltInOutputSelector */ false,
-                            /* showChannelsAsStereoPairs */ true,
-                            /* hideAdvancedOptionsWithButton */ false);
+        setUsingNativeTitleBar(true);
+        setResizable(false, false);
+        setLookAndFeel(&lookAndFeel);
 
-        setContentOwned (selector.release(), true);
-        centreWithSize (500, 400);
+        // Create selector: wantInput=true, wantOutput=true, showMidi=false
+        selector = new juce::AudioDeviceSelectorComponent(
+                        deviceManager,
+                        /* minInput */   0,  /* maxInput */   256,
+                        /* minOutput */  0,  /* maxOutput */  256,
+                        /* showMidi */ false,
+                        /* includeBuiltInOutputSelector */ false,
+                        /* showChannelsAsStereoPairs */ true,
+                        /* hideAdvancedOptionsWithButton */ false);
+
+        setContentOwned(selector, true);
+        centreWithSize(500, 400);
     }
 
     void AudioSettingsDialog::closeButtonPressed()
     {
-        setVisible (false);   // caller deletes
+        // Persist device state for next launch
+        if (auto xml = deviceManager.createStateXml())
+        {
+            auto file = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                            .getChildFile("Auralis/audio_device.xml");
+            file.getParentDirectory().createDirectory();
+            xml->writeToFile(file, {});
+        }
+
+        setVisible(false);   // caller deletes
+        setLookAndFeel(nullptr);
     }
-} 
+}

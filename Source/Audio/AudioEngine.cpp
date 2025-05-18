@@ -121,6 +121,7 @@ AudioEngine::AudioEngine()
 AudioEngine::~AudioEngine()
 {
     deviceManager.removeAudioCallback(this);
+    saveAudioDeviceState();
 }
 
 void AudioEngine::audioDeviceIOCallbackWithContext(const float* const* inputChannelData, 
@@ -359,11 +360,8 @@ std::vector<GroupBusProcessor*> AudioEngine::getAllGroupBusProcessors()
 
 bool AudioEngine::setupAudioDevices()
 {
-    juce::AudioDeviceManager::AudioDeviceSetup config;
-    
-    deviceManager.initialise(2, 2, nullptr, true, {}, &config);
+    loadAudioDeviceState();
     deviceManager.addAudioCallback(this);
-    
     return true;
 }
 
@@ -380,4 +378,30 @@ void AudioEngine::broadcastParametersChanged()
     // This is a no-op stub for now
     // In the future, this will notify UI components to refresh their displays
     DBG("Broadcasting parameter changes to UI");
-} 
+}
+
+void AudioEngine::saveAudioDeviceState() const
+{
+    if (auto xml = deviceManager.createStateXml())
+    {
+        auto file = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                        .getChildFile("Auralis/audio_device.xml");
+        file.getParentDirectory().createDirectory();
+        xml->writeToFile(file, {});
+    }
+}
+
+void AudioEngine::loadAudioDeviceState()
+{
+    auto file = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                    .getChildFile("Auralis/audio_device.xml");
+
+    std::unique_ptr<juce::XmlElement> xml;
+    if (file.existsAsFile())
+        xml.reset(juce::XmlDocument::parse(file));
+
+    juce::AudioDeviceManager::AudioDeviceSetup cfg;
+    juce::String err = deviceManager.initialise(2, 2, xml.get(), true, {}, &cfg);
+    if (err.isNotEmpty())
+        juce::Logger::writeToLog("Audio init error: " + err);
+}
