@@ -101,6 +101,10 @@ RoutingComponent::RoutingComponent()
     // Create soundcheck panel (but don't make visible yet)
     soundcheckPanel = std::make_unique<SoundcheckPanel>();
     addChildComponent(soundcheckPanel.get());
+
+    // Routing matrix
+    routingMatrix = std::make_unique<RoutingMatrixComponent>();
+    addAndMakeVisible(routingMatrix.get());
     
     addAndMakeVisible(soundcheckButton);
     addAndMakeVisible(autoMapButton);
@@ -151,11 +155,6 @@ void RoutingComponent::paint(juce::Graphics& g)
         g.fillAll(juce::Colours::black);
     }
     
-    // Draw placeholder text
-    g.setColour(juce::Colours::white);
-    g.setFont(20.0f);
-    g.drawText("Routing Panel (Placeholder)", getLocalBounds().reduced(20),
-               juce::Justification::centred, true);
 }
 
 void RoutingComponent::resized()
@@ -178,6 +177,11 @@ void RoutingComponent::resized()
     
     // Position toolbar at the top-right
     toolbar.setBounds(getWidth() - 200, 0, 200, 40);
+
+    // Position routing matrix below toolbar
+    auto matrixBounds = bounds.reduced(20);
+    matrixBounds.removeFromTop(50); // space for buttons
+    routingMatrix->setBounds(matrixBounds);
     
     // Center the soundcheck panel
     auto centerX = (getWidth() - soundcheckPanel->getWidth()) / 2;
@@ -199,8 +203,11 @@ void RoutingComponent::connectToAudioEngine(AudioEngine* engine)
         {
             processors.push_back(audioEngine->getChannelProcessor(i));
         }
-        
+
         soundcheckPanel->setChannelProcessors(processors);
+
+        routingMatrix->setRoutingManager(&audioEngine->getRoutingManager());
+        routingMatrix->refreshMatrix();
     }
 }
 
@@ -238,7 +245,9 @@ void RoutingComponent::buttonClicked(juce::Button* button)
             int phys = rm.getPhysicalInput(strip->getChannelIndex());
             strip->setSelectedInput(phys, juce::dontSendNotification);
         }
-        
+
+        routingMatrix->refreshMatrix();
+
         refreshChannelLabels();   // existing method to update UI
         DBG("Auto-mapped " << n << " inputs");
     }

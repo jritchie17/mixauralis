@@ -5,6 +5,7 @@
 #include "../Utils/BlackwayLookAndFeel.h"
 #include "SoundcheckPanel.h"
 #include "../Routing/RoutingManager.h"
+#include "RoutingMatrixComponent.h"
 
 // Forward declare factory class for friendship
 class RoutingToolbarItemFactory;
@@ -58,6 +59,8 @@ private:
     friend class RoutingToolbarItemFactory;
     
     void refreshChannelLabels();
+
+    std::unique_ptr<RoutingMatrixComponent> routingMatrix;
     
     juce::TextButton soundcheckButton { "Soundcheck" };
     juce::TextButton autoMapButton { "Auto-Map Inputs" };

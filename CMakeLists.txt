@@ -36,6 +36,8 @@ target_sources(Auralis PRIVATE
     Source/UI/MasterBusComponent.h
     Source/UI/RoutingComponent.cpp
     Source/UI/RoutingComponent.h
+    Source/UI/RoutingMatrixComponent.cpp
+    Source/UI/RoutingMatrixComponent.h
     Source/UI/SoundcheckPanel.cpp
     Source/UI/SoundcheckPanel.h
     Source/UI/SettingsComponent.h
