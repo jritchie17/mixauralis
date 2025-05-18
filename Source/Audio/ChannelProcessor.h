@@ -6,6 +6,7 @@
 #include "../FX/EQProcessor.h"
 #include "../FX/CompressorProcessor.h"
 #include "TunerProcessor.h"
+#include "FXBusProcessor.h"
 
 // Forward declaration to avoid circular dependency
 class AudioEngine;
@@ -74,6 +75,7 @@ public:
     void setChannelIndex(int index) { channelIndex = index; }
     void setChannelType(ChannelType type) { channelType = type; }
     void setAudioEngine(AudioEngine* engine) { audioEngine = engine; }
+    void setFxBusProcessor(FXBusProcessor* bus) { fxSendBus = bus; }
 
 private:
     // Channel identification
@@ -96,7 +98,7 @@ private:
     GateProcessor* gate = nullptr;
     EQProcessor* eq = nullptr;
     CompressorProcessor* comp = nullptr;
-    juce::AudioProcessor* fxSend = nullptr;   // TODO
+    FXBusProcessor* fxSendBus = nullptr;  // Assigned by RoutingManager
     std::unique_ptr<auralis::TunerProcessor> tuner;    // Owned by this class
     
     // AudioProcessorGraph for connecting the processors

@@ -179,7 +179,10 @@ void ChannelProcessor::setEqEnabled(bool enabled)
 void ChannelProcessor::setFxSendLevel(float level)
 {
     fxSendLevel = juce::jlimit(0.0f, 1.0f, level);
-    // TODO: Update the FX send level when implemented
+
+    // Propagate the level to the assigned FX bus if available
+    if (fxSendBus != nullptr)
+        fxSendBus->addInputChannel(channelIndex, fxSendLevel);
 }
 
 void ChannelProcessor::setTunerEnabled(bool enabled)

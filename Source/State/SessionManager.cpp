@@ -449,10 +449,23 @@ namespace auralis
             master->setStreamTarget(platform);
             
             // If platform is Custom and we have a custom LUFS value, restore it
-            // TODO: Add callback to SettingsComponent to update slider value
             if (platform == StreamTarget::Custom && v.hasProperty("customLufs"))
             {
-                master->setTargetLufs(static_cast<float>(v["customLufs"]));
+                const float custom = static_cast<float>(v["customLufs"]);
+                master->setTargetLufs(custom);
+
+                // Propagate the value to the SettingsComponent slider if available
+                if (auto* app = dynamic_cast<MainApp*>(juce::JUCEApplication::getInstance()))
+                {
+                    if (auto* mainWin = app->getMainWindow())
+                    {
+                        if (auto* mainComp = mainWin->getMainComponent())
+                        {
+                            if (auto* settings = mainComp->getSettingsComponent())
+                                settings->setCustomLufs(custom);
+                        }
+                    }
+                }
             }
         }
         

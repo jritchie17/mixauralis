@@ -12,6 +12,9 @@ public:
     MainComponent();
     ~MainComponent() override;
 
+    /** Return the SettingsComponent instance for UI updates. */
+    auralis::SettingsComponent* getSettingsComponent() const { return settingsTab.get(); }
+
     void paint(juce::Graphics& g) override;
     void resized() override;
 
