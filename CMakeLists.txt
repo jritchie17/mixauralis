@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 project(Auralis VERSION 0.1.0)
 
 # Find the JUCE library - adjust the path if needed
-set(JUCE_PATH "../JUCE" CACHE PATH "Path to JUCE library")
+set(JUCE_PATH "$ENV{HOME}/JUCE" CACHE PATH "Path to JUCE library")
 if(NOT EXISTS ${JUCE_PATH})
     message(FATAL_ERROR "JUCE not found at ${JUCE_PATH}. Set JUCE_PATH to your local JUCE directory.")
 endif()
