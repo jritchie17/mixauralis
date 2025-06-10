@@ -214,7 +214,6 @@ private:
         comp.process (context);
     }
 
-    juce::dsp::ProcessSpec spec;
     static constexpr float lowCrossoverHz  = 200.0f;
     static constexpr float highCrossoverHz = 2000.0f;
     using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
