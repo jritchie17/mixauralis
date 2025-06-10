@@ -178,6 +178,10 @@ private:
             midLowFilters[ch].reset();
             midHighFilters[ch].reset();
         }
+        juce::Logger::writeToLog("Low/high crossover: "
+            + juce::String(lowCrossoverHz) + " / "
+            + juce::String(highCrossoverHz));
+        juce::Logger::writeToLog("updateFilters: initialization complete");
         juce::Logger::writeToLog("updateFilters: end");
     }
 
