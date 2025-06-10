@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "../Audio/ChannelProcessor.h"
 #include "../Audio/FXBusProcessor.h"
+#include "../Subscription/SubscriptionManager.h"
 
 namespace auralis {
 
