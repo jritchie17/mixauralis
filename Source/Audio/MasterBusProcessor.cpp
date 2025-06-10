@@ -15,19 +15,28 @@ public:
     {
         juce::Logger::writeToLog("MultibandCompressorProcessor::prepare: start");
         
-        // Update filters
+        // Update filters and prepare DSP objects
         updateFilters(sampleRate);
-        
-        // Prepare compressors
-        juce::Logger::writeToLog("Preparing compressors");
+
+        juce::Logger::writeToLog("Preparing compressors and filters");
         juce::dsp::ProcessSpec spec;
         spec.sampleRate = sampleRate;
         spec.maximumBlockSize = static_cast<juce::uint32>(maximumBlockSize);
         spec.numChannels = 2;
+
+        // Prepare filter banks
+        for (auto& filter : lowFilters)
+            filter.prepare(spec);
+        for (auto& filter : highFilters)
+            filter.prepare(spec);
+        for (auto& filter : midLowFilters)
+            filter.prepare(spec);
+        for (auto& filter : midHighFilters)
+            filter.prepare(spec);
+
+        // Prepare compressors
         for (auto& comp : compressors)
-        {
             comp.prepare(spec);
-        }
         
         juce::Logger::writeToLog("MultibandCompressorProcessor::prepare: end");
     }
