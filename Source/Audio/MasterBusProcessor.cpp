@@ -68,21 +68,24 @@ public:
             // Process low band
             juce::Logger::writeToLog("Processing low filter");
             auto* lowData = lowBand.getWritePointer(ch);
-            juce::dsp::AudioBlock<float> lowBlock((float* const*)&lowData, 1, (size_t)numSamples);
+            float* lowChannels[] = { lowData };
+            juce::dsp::AudioBlock<float> lowBlock(lowChannels, 1, (size_t)numSamples);
             juce::dsp::ProcessContextReplacing<float> lowContext(lowBlock);
             lowFilters[ch].process(lowContext);
             
             // Process high band
             juce::Logger::writeToLog("Processing high filter");
             auto* highData = highBand.getWritePointer(ch);
-            juce::dsp::AudioBlock<float> highBlock((float* const*)&highData, 1, (size_t)numSamples);
+            float* highChannels[] = { highData };
+            juce::dsp::AudioBlock<float> highBlock(highChannels, 1, (size_t)numSamples);
             juce::dsp::ProcessContextReplacing<float> highContext(highBlock);
             highFilters[ch].process(highContext);
             
             // Process mid band
             juce::Logger::writeToLog("Processing mid filters");
             auto* midData = midBand.getWritePointer(ch);
-            juce::dsp::AudioBlock<float> midBlock((float* const*)&midData, 1, (size_t)numSamples);
+            float* midChannels[] = { midData };
+            juce::dsp::AudioBlock<float> midBlock(midChannels, 1, (size_t)numSamples);
             juce::dsp::ProcessContextReplacing<float> midContext(midBlock);
             midHighFilters[ch].process(midContext);
             midLowFilters[ch].process(midContext);
@@ -125,10 +128,16 @@ private:
     void updateFilters(double sampleRate)
     {
         juce::Logger::writeToLog("updateFilters: Creating filter coefficients");
-        lowLP = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, lowCrossoverHz);
+        lowLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, lowCrossoverHz);
         highHP = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, highCrossoverHz);
-        midHP = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, lowCrossoverHz);
-        midLP = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, highCrossoverHz);
+        midHP  = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, lowCrossoverHz);
+        midLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, highCrossoverHz);
+
+        jassert(lowLP  != nullptr);
+        jassert(highHP != nullptr);
+        jassert(midHP  != nullptr);
+        jassert(midLP  != nullptr);
+
         juce::Logger::writeToLog("updateFilters: Assigning coefficients to filters");
         for (int ch = 0; ch < 2; ++ch)
         {
