@@ -103,4 +103,15 @@ int RoutingManager::getNumPhysicalInputs() const
     return 0;
 }
 
-} // namespace auralis 
+int RoutingManager::getMaxChannelsForPlan(auralis::Plan plan)
+{
+    switch (plan)
+    {
+        case auralis::Plan::Foundation: return 32;
+        case auralis::Plan::Flow:       return 48;
+        case auralis::Plan::Pro:        return 64;
+    }
+    return 32;
+}
+
+} // namespace auralis
