@@ -67,26 +67,23 @@ public:
             
             // Process low band
             juce::Logger::writeToLog("Processing low filter");
-            auto* lowData = lowBand.getWritePointer(ch);
-            float* lowChannels[] = { lowData };
-            juce::dsp::AudioBlock<float> lowBlock(lowChannels, 1, (size_t)numSamples);
-            juce::dsp::ProcessContextReplacing<float> lowContext(lowBlock);
+            juce::dsp::AudioBlock<float> lowBlock(lowBand);
+            auto lowSingle = lowBlock.getSingleChannelBlock((size_t)ch);
+            juce::dsp::ProcessContextReplacing<float> lowContext(lowSingle);
             lowFilters[ch].process(lowContext);
             
             // Process high band
             juce::Logger::writeToLog("Processing high filter");
-            auto* highData = highBand.getWritePointer(ch);
-            float* highChannels[] = { highData };
-            juce::dsp::AudioBlock<float> highBlock(highChannels, 1, (size_t)numSamples);
-            juce::dsp::ProcessContextReplacing<float> highContext(highBlock);
+            juce::dsp::AudioBlock<float> highBlock(highBand);
+            auto highSingle = highBlock.getSingleChannelBlock((size_t)ch);
+            juce::dsp::ProcessContextReplacing<float> highContext(highSingle);
             highFilters[ch].process(highContext);
             
             // Process mid band
             juce::Logger::writeToLog("Processing mid filters");
-            auto* midData = midBand.getWritePointer(ch);
-            float* midChannels[] = { midData };
-            juce::dsp::AudioBlock<float> midBlock(midChannels, 1, (size_t)numSamples);
-            juce::dsp::ProcessContextReplacing<float> midContext(midBlock);
+            juce::dsp::AudioBlock<float> midBlock(midBand);
+            auto midSingle = midBlock.getSingleChannelBlock((size_t)ch);
+            juce::dsp::ProcessContextReplacing<float> midContext(midSingle);
             midHighFilters[ch].process(midContext);
             midLowFilters[ch].process(midContext);
         }
