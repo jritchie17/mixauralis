@@ -27,6 +27,13 @@ public:
     
     // Get the number of physical inputs
     int getNumPhysicalInputs() const;
+
+    /**
+     * Return the maximum number of channels allowed for the given
+     * subscription plan. This is used by UI components to limit
+     * how many channels can be shown or routed.
+     */
+    static int getMaxChannelsForPlan(auralis::Plan plan);
     
 private:
     RoutingManager() = default;
