@@ -6,19 +6,102 @@
 class MultibandCompressorProcessor
 {
 public:
-    MultibandCompressorProcessor() = default;
-
-    void prepare (double sampleRate, int maximumBlockSize)
+    MultibandCompressorProcessor()
     {
-        spec.sampleRate       = sampleRate;
-        spec.maximumBlockSize = static_cast<juce::uint32> (maximumBlockSize);
-        spec.numChannels      = 2;
-
-        // Configure filters
-        updateFilters (sampleRate);
-
+        juce::Logger::writeToLog("MultibandCompressorProcessor constructor");
+    }
+    
+    void prepare(double sampleRate, int maximumBlockSize)
+    {
+        juce::Logger::writeToLog("MultibandCompressorProcessor::prepare: start");
+        
+        // Update filters
+        updateFilters(sampleRate);
+        
+        // Prepare compressors
+        juce::Logger::writeToLog("Preparing compressors");
+        juce::dsp::ProcessSpec spec;
+        spec.sampleRate = sampleRate;
+        spec.maximumBlockSize = static_cast<juce::uint32>(maximumBlockSize);
+        spec.numChannels = 2;
         for (auto& comp : compressors)
-            comp.prepare (spec);
+        {
+            comp.prepare(spec);
+        }
+        
+        juce::Logger::writeToLog("MultibandCompressorProcessor::prepare: end");
+    }
+    
+    void process(juce::AudioBuffer<float>& buffer)
+    {
+        juce::Logger::writeToLog("MultibandCompressorProcessor::process: start");
+        
+        const int numChannels = buffer.getNumChannels();
+        const int numSamples = buffer.getNumSamples();
+        
+        juce::Logger::writeToLog("numChannels: " + juce::String(numChannels) + ", numSamples: " + juce::String(numSamples));
+        
+        // Create temporary buffers for each band
+        juce::Logger::writeToLog("Allocating band buffers");
+        juce::AudioBuffer<float> lowBand(numChannels, numSamples);
+        juce::AudioBuffer<float> midBand(numChannels, numSamples);
+        juce::AudioBuffer<float> highBand(numChannels, numSamples);
+        
+        // Copy input to all bands
+        juce::Logger::writeToLog("Copying input to band buffers");
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            lowBand.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+            midBand.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+            highBand.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+        }
+        
+        // Process each channel
+        juce::Logger::writeToLog("Starting band split loop");
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            juce::Logger::writeToLog("Processing channel: " + juce::String(ch));
+            
+            // Process filters
+            juce::Logger::writeToLog("Processing filters");
+            
+            // Process low band
+            juce::Logger::writeToLog("Processing low filter");
+            auto* lowData = lowBand.getWritePointer(ch);
+            juce::dsp::AudioBlock<float> lowBlock((float* const*)&lowData, 1, (size_t)numSamples);
+            juce::dsp::ProcessContextReplacing<float> lowContext(lowBlock);
+            lowFilters[ch].process(lowContext);
+            
+            // Process high band
+            juce::Logger::writeToLog("Processing high filter");
+            auto* highData = highBand.getWritePointer(ch);
+            juce::dsp::AudioBlock<float> highBlock((float* const*)&highData, 1, (size_t)numSamples);
+            juce::dsp::ProcessContextReplacing<float> highContext(highBlock);
+            highFilters[ch].process(highContext);
+            
+            // Process mid band
+            juce::Logger::writeToLog("Processing mid filters");
+            auto* midData = midBand.getWritePointer(ch);
+            juce::dsp::AudioBlock<float> midBlock((float* const*)&midData, 1, (size_t)numSamples);
+            juce::dsp::ProcessContextReplacing<float> midContext(midBlock);
+            midHighFilters[ch].process(midContext);
+            midLowFilters[ch].process(midContext);
+        }
+        
+        // Process each band with its compressor
+        juce::Logger::writeToLog("Processing compressors");
+        processBand(lowBand, compressors[0]);
+        processBand(midBand, compressors[1]);
+        processBand(highBand, compressors[2]);
+        
+        // Mix bands back together
+        juce::Logger::writeToLog("Mixing bands");
+        buffer.clear();
+        buffer.addFrom(0, 0, lowBand, 0, 0, numSamples);
+        buffer.addFrom(0, 0, midBand, 0, 0, numSamples);
+        buffer.addFrom(0, 0, highBand, 0, 0, numSamples);
+        
+        juce::Logger::writeToLog("MultibandCompressorProcessor::process: end");
     }
 
     void reset()
@@ -36,75 +119,29 @@ public:
             filter.reset();
     }
 
-    void process (juce::AudioBuffer<float>& buffer)
-    {
-        if (! isEnabled)
-            return;
-
-        const int numSamples = buffer.getNumSamples();
-
-        // Prepare temporary buffers for each band
-        juce::AudioBuffer<float> low  (buffer.getNumChannels(), numSamples);
-        juce::AudioBuffer<float> mid  (buffer.getNumChannels(), numSamples);
-        juce::AudioBuffer<float> high (buffer.getNumChannels(), numSamples);
-
-        low.makeCopyOf  (buffer);
-        mid.makeCopyOf  (buffer);
-        high.makeCopyOf (buffer);
-
-        // Split into bands using simple second order filters
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-        {
-            auto* lowData  = low.getWritePointer (ch);
-            auto* midData  = mid.getWritePointer (ch);
-            auto* highData = high.getWritePointer (ch);
-
-            juce::dsp::AudioBlock<float> lowBlock(&lowData, 1, numSamples);
-            juce::dsp::AudioBlock<float> midBlock(&midData, 1, numSamples);
-            juce::dsp::AudioBlock<float> highBlock(&highData, 1, numSamples);
-
-            juce::dsp::ProcessContextReplacing<float> lowContext(lowBlock);
-            juce::dsp::ProcessContextReplacing<float> midContext(midBlock);
-            juce::dsp::ProcessContextReplacing<float> highContext(highBlock);
-
-            lowFilters[ch].process(lowContext);
-            highFilters[ch].process(highContext);
-            midHighFilters[ch].process(midContext);
-            midLowFilters[ch].process(midContext);
-        }
-
-        // Run each band through its compressor
-        processBand (low,  compressors[0]);
-        processBand (mid,  compressors[1]);
-        processBand (high, compressors[2]);
-
-        // Sum bands back into the output buffer
-        buffer.clear();
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-        {
-            buffer.addFrom (ch, 0, low,  ch, 0, numSamples);
-            buffer.addFrom (ch, 0, mid,  ch, 0, numSamples);
-            buffer.addFrom (ch, 0, high, ch, 0, numSamples);
-        }
-    }
-
     void setEnabled (bool enabled) noexcept  { isEnabled = enabled; }
 
 private:
-    void updateFilters (double sampleRate)
+    void updateFilters(double sampleRate)
     {
-        auto lowLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass  (sampleRate, lowCrossoverHz);
-        auto highHP = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, highCrossoverHz);
-        auto midHP  = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, lowCrossoverHz);
-        auto midLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass  (sampleRate, highCrossoverHz);
-
+        juce::Logger::writeToLog("updateFilters: Creating filter coefficients");
+        lowLP = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, lowCrossoverHz);
+        highHP = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, highCrossoverHz);
+        midHP = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, lowCrossoverHz);
+        midLP = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, highCrossoverHz);
+        juce::Logger::writeToLog("updateFilters: Assigning coefficients to filters");
         for (int ch = 0; ch < 2; ++ch)
         {
             lowFilters[ch].state = *lowLP;
             highFilters[ch].state = *highHP;
             midLowFilters[ch].state = *midLP;
             midHighFilters[ch].state = *midHP;
+            lowFilters[ch].reset();
+            highFilters[ch].reset();
+            midLowFilters[ch].reset();
+            midHighFilters[ch].reset();
         }
+        juce::Logger::writeToLog("updateFilters: end");
     }
 
     static void processBand (juce::AudioBuffer<float>& bandBuffer, juce::dsp::Compressor<float>& comp)
@@ -114,23 +151,20 @@ private:
         comp.process (context);
     }
 
-    //==========================================================================
     juce::dsp::ProcessSpec spec;
-
     static constexpr float lowCrossoverHz  = 200.0f;
     static constexpr float highCrossoverHz = 2000.0f;
-
-    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
-                                                  juce::dsp::IIR::Coefficients<float>>;
-
+    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
     Filter lowFilters [2];
     Filter highFilters[2];
     Filter midLowFilters [2];
     Filter midHighFilters[2];
-
     juce::dsp::Compressor<float> compressors[3];
-
     bool isEnabled { true };
+    juce::ReferenceCountedObjectPtr<juce::dsp::IIR::Coefficients<float>> lowLP;
+    juce::ReferenceCountedObjectPtr<juce::dsp::IIR::Coefficients<float>> highHP;
+    juce::ReferenceCountedObjectPtr<juce::dsp::IIR::Coefficients<float>> midHP;
+    juce::ReferenceCountedObjectPtr<juce::dsp::IIR::Coefficients<float>> midLP;
 };
 
 //==============================================================================
@@ -180,6 +214,7 @@ void MasterBusProcessor::releaseResources()
 
 void MasterBusProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    juce::Logger::writeToLog("MasterBusProcessor::processBlock: start");
     juce::ScopedNoDenormals noDenormals;
     
     // Process through compressor if enabled
@@ -217,6 +252,7 @@ void MasterBusProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     const double meanSquare = sumSquares / (temp.getNumSamples() * temp.getNumChannels());
     const double rms = std::sqrt(meanSquare);
     currentLufs = static_cast<float>(juce::Decibels::gainToDecibels(rms) - 0.691f);
+    juce::Logger::writeToLog("MasterBusProcessor::processBlock: end");
 }
 
 void MasterBusProcessor::setTargetLufs(float targetLUFS) noexcept

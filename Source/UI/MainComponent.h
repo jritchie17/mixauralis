@@ -22,8 +22,8 @@ private:
     juce::Image backgroundImage;
     
     // Audio processors
-    std::unique_ptr<AudioEngine> audioEngine;
-    std::unique_ptr<MasterBusProcessor> masterBusProcessor;
+    AudioEngine* audioEngine = nullptr;  // Pointer to global instance
+    MasterBusProcessor* masterBusProcessor = nullptr;  // Pointer to global instance
     
     juce::TabbedComponent tabbedComponent{juce::TabbedButtonBar::TabsAtTop};
     

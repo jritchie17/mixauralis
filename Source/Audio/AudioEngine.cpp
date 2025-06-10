@@ -69,53 +69,102 @@ private:
 
 AudioEngine::AudioEngine()
 {
-    // Initialize channel processors
-    for (int i = 0; i < numChannels; ++i)
-    {
-        // Assign default channel types based on index
-        ChannelProcessor::ChannelType type;
+    juce::Logger::writeToLog("AudioEngine constructor start");
+    
+    try {
+        // Initialize channel processors
+        for (int i = 0; i < numChannels; ++i)
+        {
+            // Assign default channel types based on index
+            ChannelProcessor::ChannelType type;
+            
+            if (i < 8)
+            {
+                type = ChannelProcessor::ChannelType::Vocal;
+            }
+            else if (i < 16)
+            {
+                type = ChannelProcessor::ChannelType::Instrument;
+            }
+            else
+            {
+                type = ChannelProcessor::ChannelType::Drums;
+            }
+            
+            // Create the processor with index, type, and a reference to this engine
+            auto processor = std::make_unique<ChannelProcessor>(i, type, this);
+            if (!processor)
+            {
+                juce::Logger::writeToLog("Failed to create channel processor " + juce::String(i));
+                throw std::runtime_error("Failed to create channel processor");
+            }
+            channelProcessors.push_back(std::move(processor));
+        }
         
-        if (i < 8)
+        // Initialize group bus processors
+        for (int i = 0; i < numGroupBuses; ++i)
         {
-            type = ChannelProcessor::ChannelType::Vocal;
-        }
-        else if (i < 16)
-        {
-            type = ChannelProcessor::ChannelType::Instrument;
-        }
-        else
-        {
-            type = ChannelProcessor::ChannelType::Drums;
+            auto busType = static_cast<GroupBusProcessor::BusType>(i);
+            auto processor = std::make_unique<GroupBusProcessor>(busType);
+            if (!processor)
+            {
+                juce::Logger::writeToLog("Failed to create group bus processor " + juce::String(i));
+                throw std::runtime_error("Failed to create group bus processor");
+            }
+            groupBusProcessors.push_back(std::move(processor));
         }
         
-        // Create the processor with index, type, and a reference to this engine
-        channelProcessors.push_back(std::make_unique<ChannelProcessor>(i, type, this));
+        // Initialize FX bus processors
+        for (int i = 0; i < numFXBuses; ++i)
+        {
+            auto busType = static_cast<FXBusProcessor::BusType>(i);
+            auto processor = std::make_unique<FXBusProcessor>(busType);
+            if (!processor)
+            {
+                juce::Logger::writeToLog("Failed to create FX bus processor " + juce::String(i));
+                throw std::runtime_error("Failed to create FX bus processor");
+            }
+            fxBusProcessors.push_back(std::move(processor));
+        }
+        
+        // Initialize master bus processor
+        masterBusProcessor = std::make_unique<MasterBusProcessor>();
+        if (!masterBusProcessor)
+        {
+            juce::Logger::writeToLog("Failed to create master bus processor");
+            throw std::runtime_error("Failed to create master bus processor");
+        }
+        
+        // Initialize routing manager
+        getRoutingManager().initialize(channelProcessors, fxBusProcessors);
+        
+        // Create a test sine wave source on Channel 1
+        testSineWave = std::make_unique<SineWaveTestProcessor>();
+        if (!testSineWave)
+        {
+            juce::Logger::writeToLog("Failed to create test sine wave processor");
+            throw std::runtime_error("Failed to create test sine wave processor");
+        }
+        
+        // Set up the audio device manager
+        if (!setupAudioDevices())
+        {
+            juce::Logger::writeToLog("Failed to set up audio devices");
+            throw std::runtime_error("Failed to set up audio devices");
+        }
+        
+        juce::Logger::writeToLog("AudioEngine constructor done");
     }
-    
-    // Initialize group bus processors
-    groupBusProcessors.push_back(std::make_unique<GroupBusProcessor>(GroupBusProcessor::BusType::Vocals));
-    groupBusProcessors.push_back(std::make_unique<GroupBusProcessor>(GroupBusProcessor::BusType::Instruments));
-    groupBusProcessors.push_back(std::make_unique<GroupBusProcessor>(GroupBusProcessor::BusType::Drums));
-    groupBusProcessors.push_back(std::make_unique<GroupBusProcessor>(GroupBusProcessor::BusType::Speech));
-    
-    // Initialize FX bus processors
-    for (int i = 0; i < numFXBuses; ++i)
+    catch (const std::exception& e)
     {
-        auto busType = static_cast<FXBusProcessor::BusType>(i);
-        fxBusProcessors.push_back(std::make_unique<FXBusProcessor>(busType));
+        juce::Logger::writeToLog("Exception in AudioEngine constructor: " + juce::String(e.what()));
+        throw; // Re-throw to be handled by caller
     }
-    
-    // Initialize master bus processor
-    masterBusProcessor = std::make_unique<MasterBusProcessor>();
-    
-    // Initialize routing manager
-    getRoutingManager().initialize(channelProcessors, fxBusProcessors);
-    
-    // Create a test sine wave source on Channel 1
-    testSineWave = std::make_unique<SineWaveTestProcessor>();
-    
-    // Set up the audio device manager
-    setupAudioDevices();
+    catch (...)
+    {
+        juce::Logger::writeToLog("Unknown exception in AudioEngine constructor");
+        throw; // Re-throw to be handled by caller
+    }
 }
 
 AudioEngine::~AudioEngine()
@@ -131,6 +180,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(const float* const* inputChan
                                                  int numSamples,
                                                  const juce::AudioIODeviceCallbackContext& context)
 {
+    juce::Logger::writeToLog("audioDeviceIOCallbackWithContext: start");
     // Clear output buffers
     for (int channel = 0; channel < numOutputChannels; ++channel)
     {
@@ -243,6 +293,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(const float* const* inputChan
     {
         std::memcpy(outputChannelData[channel], masterBuffer.getReadPointer(channel), sizeof(float) * numSamples);
     }
+    juce::Logger::writeToLog("audioDeviceIOCallbackWithContext: end");
 }
 
 void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice* device)
