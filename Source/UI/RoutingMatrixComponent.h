@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "../Routing/RoutingManager.h"
-#include "../Subscription/SubscriptionManager.h"
+#include "Subscription/SubscriptionManager.h"
 
 class RoutingMatrixComponent : public juce::Component
 {

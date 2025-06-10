@@ -1,6 +1,6 @@
 #include "ChannelsComponent.h"
 #include "../MainApp.h"
-#include "../../Subscription/SubscriptionManager.h"
+#include "Subscription/SubscriptionManager.h"
 #include "../Utils/StyleManager.h"
 
 ChannelsComponent::ChannelsComponent()
