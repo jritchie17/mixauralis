@@ -24,6 +24,11 @@ public:
         spec.maximumBlockSize = static_cast<juce::uint32>(maximumBlockSize);
         spec.numChannels = 2;
 
+        // Sanity check - this processor only supports up to stereo
+        jassert(spec.numChannels <= 2);
+        if (spec.numChannels > 2)
+            spec.numChannels = 2;
+
         // Prepare filter banks
         for (auto& filter : lowFilters)
             filter.prepare(spec);
@@ -47,6 +52,11 @@ public:
         
         const int numChannels = buffer.getNumChannels();
         const int numSamples = buffer.getNumSamples();
+
+        // Only stereo is supported
+        jassert(numChannels <= 2);
+        if (numChannels > 2)
+            return;
         
         juce::Logger::writeToLog("numChannels: " + juce::String(numChannels) + ", numSamples: " + juce::String(numSamples));
         
