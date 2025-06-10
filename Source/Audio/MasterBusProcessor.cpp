@@ -133,6 +133,37 @@ private:
         midHP  = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, lowCrossoverHz);
         midLP  = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, highCrossoverHz);
 
+        bool coeffsValid = true;
+        if (lowLP == nullptr)
+        {
+            juce::Logger::writeToLog("updateFilters error: lowLP is null");
+            coeffsValid = false;
+        }
+
+        if (highHP == nullptr)
+        {
+            juce::Logger::writeToLog("updateFilters error: highHP is null");
+            coeffsValid = false;
+        }
+
+        if (midHP == nullptr)
+        {
+            juce::Logger::writeToLog("updateFilters error: midHP is null");
+            coeffsValid = false;
+        }
+
+        if (midLP == nullptr)
+        {
+            juce::Logger::writeToLog("updateFilters error: midLP is null");
+            coeffsValid = false;
+        }
+
+        if (! coeffsValid)
+        {
+            juce::Logger::writeToLog("updateFilters: failed to create filter coefficients");
+            return;
+        }
+
         jassert(lowLP  != nullptr);
         jassert(highHP != nullptr);
         jassert(midHP  != nullptr);
