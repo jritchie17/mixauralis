@@ -106,9 +106,12 @@ public:
         // Mix bands back together
         juce::Logger::writeToLog("Mixing bands");
         buffer.clear();
-        buffer.addFrom(0, 0, lowBand, 0, 0, numSamples);
-        buffer.addFrom(0, 0, midBand, 0, 0, numSamples);
-        buffer.addFrom(0, 0, highBand, 0, 0, numSamples);
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            buffer.addFrom(ch, 0, lowBand,  ch, 0, numSamples);
+            buffer.addFrom(ch, 0, midBand,  ch, 0, numSamples);
+            buffer.addFrom(ch, 0, highBand, ch, 0, numSamples);
+        }
         
         juce::Logger::writeToLog("MultibandCompressorProcessor::process: end");
     }
