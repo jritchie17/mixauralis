@@ -59,11 +59,18 @@ public:
             auto* midData  = mid.getWritePointer (ch);
             auto* highData = high.getWritePointer (ch);
 
-            lowFilters[ch].processSamples      (lowData, numSamples);
-            highFilters[ch].processSamples     (highData, numSamples);
+            juce::dsp::AudioBlock<float> lowBlock(&lowData, 1, numSamples);
+            juce::dsp::AudioBlock<float> midBlock(&midData, 1, numSamples);
+            juce::dsp::AudioBlock<float> highBlock(&highData, 1, numSamples);
 
-            midHighFilters[ch].processSamples  (midData, numSamples);
-            midLowFilters[ch].processSamples   (midData, numSamples);
+            juce::dsp::ProcessContextReplacing<float> lowContext(lowBlock);
+            juce::dsp::ProcessContextReplacing<float> midContext(midBlock);
+            juce::dsp::ProcessContextReplacing<float> highContext(highBlock);
+
+            lowFilters[ch].process(lowContext);
+            highFilters[ch].process(highContext);
+            midHighFilters[ch].process(midContext);
+            midLowFilters[ch].process(midContext);
         }
 
         // Run each band through its compressor
@@ -93,10 +100,10 @@ private:
 
         for (int ch = 0; ch < 2; ++ch)
         {
-            *lowFilters[ch].coefficients      = *lowLP;
-            *highFilters[ch].coefficients     = *highHP;
-            *midLowFilters[ch].coefficients   = *midLP;
-            *midHighFilters[ch].coefficients  = *midHP;
+            lowFilters[ch].state = *lowLP;
+            highFilters[ch].state = *highHP;
+            midLowFilters[ch].state = *midLP;
+            midHighFilters[ch].state = *midHP;
         }
     }
 
@@ -155,8 +162,8 @@ void MasterBusProcessor::prepareToPlay(double sampleRate, int maximumExpectedSam
                                                                   juce::Decibels::decibelsToGain(4.0f));
     for (int ch = 0; ch < 2; ++ch)
     {
-        *hpFilters[ch].coefficients    = *hp;
-        *shelfFilters[ch].coefficients = *sh;
+        hpFilters[ch].state = *hp;
+        shelfFilters[ch].state = *sh;
         hpFilters[ch].reset();
         shelfFilters[ch].reset();
     }
@@ -191,8 +198,12 @@ void MasterBusProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     juce::AudioBuffer<float> temp (buffer);
     for (int ch = 0; ch < temp.getNumChannels(); ++ch)
     {
-        hpFilters[ch].processSamples   (temp.getWritePointer(ch), temp.getNumSamples());
-        shelfFilters[ch].processSamples(temp.getWritePointer(ch), temp.getNumSamples());
+        float* channelPtr = temp.getWritePointer(ch);
+        float* channels[] = { channelPtr };
+        juce::dsp::AudioBlock<float> block(channels, 1, temp.getNumSamples());
+        juce::dsp::ProcessContextReplacing<float> context(block);
+        hpFilters[ch].process(context);
+        shelfFilters[ch].process(context);
     }
 
     double sumSquares = 0.0;

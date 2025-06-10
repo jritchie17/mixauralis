@@ -387,7 +387,7 @@ void AudioEngine::saveAudioDeviceState() const
         auto file = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                         .getChildFile("Auralis/audio_device.xml");
         file.getParentDirectory().createDirectory();
-        xml->writeToFile(file, {});
+        xml->writeTo(file);
     }
 }
 
@@ -398,7 +398,7 @@ void AudioEngine::loadAudioDeviceState()
 
     std::unique_ptr<juce::XmlElement> xml;
     if (file.existsAsFile())
-        xml.reset(juce::XmlDocument::parse(file));
+        xml = juce::XmlDocument::parse(file);
 
     juce::AudioDeviceManager::AudioDeviceSetup cfg;
     juce::String err = deviceManager.initialise(2, 2, xml.get(), true, {}, &cfg);
