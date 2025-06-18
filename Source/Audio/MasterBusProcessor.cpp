@@ -109,19 +109,27 @@ public:
         
         // Process each band with its compressor
         juce::Logger::writeToLog("Processing compressors");
+        juce::Logger::writeToLog("Processing low band compressor");
         processBand(lowBand, compressors[0]);
+        juce::Logger::writeToLog("Low band compressor processed");
+        juce::Logger::writeToLog("Processing mid band compressor");
         processBand(midBand, compressors[1]);
+        juce::Logger::writeToLog("Mid band compressor processed");
+        juce::Logger::writeToLog("Processing high band compressor");
         processBand(highBand, compressors[2]);
+        juce::Logger::writeToLog("High band compressor processed");
         
         // Mix bands back together
         juce::Logger::writeToLog("Mixing bands");
+        juce::Logger::writeToLog("Clearing output buffer");
         buffer.clear();
-        for (int ch = 0; ch < numChannels; ++ch)
-        {
-            buffer.addFrom(ch, 0, lowBand,  ch, 0, numSamples);
-            buffer.addFrom(ch, 0, midBand,  ch, 0, numSamples);
-            buffer.addFrom(ch, 0, highBand, ch, 0, numSamples);
-        }
+        juce::Logger::writeToLog("Adding low band to output");
+        buffer.addFrom(0, 0, lowBand, 0, 0, numSamples);
+        juce::Logger::writeToLog("Adding mid band to output");
+        buffer.addFrom(0, 0, midBand, 0, 0, numSamples);
+        juce::Logger::writeToLog("Adding high band to output");
+        buffer.addFrom(0, 0, highBand, 0, 0, numSamples);
+        juce::Logger::writeToLog("All bands mixed");
         
         juce::Logger::writeToLog("MultibandCompressorProcessor::process: end");
     }
@@ -252,16 +260,29 @@ void MasterBusProcessor::prepareToPlay(double sampleRate, int maximumExpectedSam
     compressor->prepare(sampleRate, maximumExpectedSamplesPerBlock);
     limiter->prepareToPlay(sampleRate, maximumExpectedSamplesPerBlock);
 
-    auto hp  = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, 40.0f);
-    auto sh  = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, 4000.0f,
-                                                                  0.7071f,
-                                                                  juce::Decibels::decibelsToGain(4.0f));
+    juce::Logger::writeToLog("Creating HP filter coefficients");
+    hpCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, 40.0f);
+    juce::Logger::writeToLog("Creating shelf filter coefficients");
+    shelfCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, 4000.0f,
+                                                                     0.7071f,
+                                                                     juce::Decibels::decibelsToGain(4.0f));
+
+    if (hpCoeffs == nullptr || shelfCoeffs == nullptr)
+    {
+        juce::Logger::writeToLog("ERROR: Failed to create filter coefficients in prepareToPlay");
+        return;
+    }
+
+    juce::Logger::writeToLog("Assigning filter coefficients to filters");
     for (int ch = 0; ch < 2; ++ch)
     {
-        hpFilters[ch].state = *hp;
-        shelfFilters[ch].state = *sh;
+        juce::Logger::writeToLog("Setting up filters for channel " + juce::String(ch));
+        hpFilters[ch].coefficients = hpCoeffs;
+        shelfFilters[ch].coefficients = shelfCoeffs;
+        juce::Logger::writeToLog("Resetting filters for channel " + juce::String(ch));
         hpFilters[ch].reset();
         shelfFilters[ch].reset();
+        juce::Logger::writeToLog("Filters for channel " + juce::String(ch) + " are ready");
     }
 
     juce::Logger::writeToLog("MasterBusProcessor prepared with sample rate: " + juce::String(sampleRate));
@@ -281,26 +302,52 @@ void MasterBusProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     
     // Process through compressor if enabled
     if (compressorEnabled)
+    {
+        juce::Logger::writeToLog("Processing through compressor");
         compressor->process(buffer);
+        juce::Logger::writeToLog("Compressor processing complete");
+    }
     
     // Process through limiter if enabled
     if (limiterEnabled)
+    {
+        juce::Logger::writeToLog("Processing through limiter");
         limiter->processBlock(buffer, midiMessages);
+        juce::Logger::writeToLog("Limiter processing complete");
+    }
     
     // Push samples to meter if available
     if (meter != nullptr)
+    {
+        juce::Logger::writeToLog("Pushing samples to meter");
         meter->pushSamples(buffer);
+        juce::Logger::writeToLog("Samples pushed to meter");
+    }
     
     // Calculate K-weighted loudness (LUFS)
+    juce::Logger::writeToLog("Calculating LUFS");
     juce::AudioBuffer<float> temp (buffer);
     for (int ch = 0; ch < temp.getNumChannels(); ++ch)
     {
+        juce::Logger::writeToLog("Processing channel " + juce::String(ch) + " for LUFS");
         float* channelPtr = temp.getWritePointer(ch);
         float* channels[] = { channelPtr };
         juce::dsp::AudioBlock<float> block(channels, 1, temp.getNumSamples());
         juce::dsp::ProcessContextReplacing<float> context(block);
-        hpFilters[ch].process(context);
-        shelfFilters[ch].process(context);
+        juce::Logger::writeToLog("Processing HP filter for channel " + juce::String(ch));
+        if (hpFilters[ch].coefficients == nullptr) {
+            juce::Logger::writeToLog("ERROR: hpFilters[" + juce::String(ch) + "].state is null! Skipping processing.");
+        } else {
+            hpFilters[ch].process(context);
+            juce::Logger::writeToLog("HP filter processed for channel " + juce::String(ch));
+        }
+        juce::Logger::writeToLog("Processing shelf filter for channel " + juce::String(ch));
+        if (shelfFilters[ch].coefficients == nullptr) {
+            juce::Logger::writeToLog("ERROR: shelfFilters[" + juce::String(ch) + "].state is null! Skipping processing.");
+        } else {
+            shelfFilters[ch].process(context);
+            juce::Logger::writeToLog("Shelf filter processed for channel " + juce::String(ch));
+        }
     }
 
     double sumSquares = 0.0;
@@ -314,6 +361,7 @@ void MasterBusProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     const double meanSquare = sumSquares / (temp.getNumSamples() * temp.getNumChannels());
     const double rms = std::sqrt(meanSquare);
     currentLufs = static_cast<float>(juce::Decibels::gainToDecibels(rms) - 0.691f);
+    juce::Logger::writeToLog("LUFS calculation complete: " + juce::String(currentLufs));
     juce::Logger::writeToLog("MasterBusProcessor::processBlock: end");
 }
 

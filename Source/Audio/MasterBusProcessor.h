@@ -75,10 +75,10 @@ private:
     auralis::LoudnessMeterComponent* meter { nullptr };
 
     // Filters used for K-weighted loudness measurement
-    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
-                                                 juce::dsp::IIR::Coefficients<float>>;
-    Filter hpFilters[2];
-    Filter shelfFilters[2];
+    juce::dsp::IIR::Filter<float> hpFilters[2];
+    juce::dsp::IIR::Filter<float> shelfFilters[2];
+    juce::ReferenceCountedObjectPtr<juce::dsp::IIR::Coefficients<float>> hpCoeffs;
+    juce::ReferenceCountedObjectPtr<juce::dsp::IIR::Coefficients<float>> shelfCoeffs;
     
     // Current state
     std::atomic<float> targetLufs{kLUFS_Youtube};
