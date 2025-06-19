@@ -5,8 +5,7 @@
 #include "../Audio/AudioEngine.h"
 #include "../Utils/StyleManager.h"
 
-class ChannelsComponent : public juce::Component,
-                          private juce::ScrollBar::Listener
+class ChannelsComponent : public juce::Component
 {
 public:
     ChannelsComponent();
@@ -23,19 +22,13 @@ public:
 
 private:
     static constexpr int numChannels = 32;
-    static constexpr int channelStripWidth = ChannelStripComponent::kStandardWidth;
-    static constexpr int viewportMargin = ChannelStripComponent::kStandardPadding;
-    
+
     juce::Image backgroundImage;
-    
+
     std::vector<std::unique_ptr<ChannelStripComponent>> channelStrips;
-    juce::Viewport viewport;
-    juce::Component channelsContainer;
-    juce::ScrollBar horizontalScrollbar{false};
-    
+
     AudioEngine* audioEngine = nullptr;
-    
-    void scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override;
+
     void checkChannelLimits();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ChannelsComponent)
