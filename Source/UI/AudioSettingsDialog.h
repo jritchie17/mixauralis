@@ -14,6 +14,7 @@ namespace auralis
         ~AudioSettingsDialog() override = default;
 
         void closeButtonPressed() override;
+        void visibilityChanged() override;
 
     private:
         juce::AudioDeviceManager& deviceManager;

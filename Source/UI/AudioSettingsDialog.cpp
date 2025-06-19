@@ -38,4 +38,10 @@ namespace auralis
         setVisible(false);   // caller deletes
         setLookAndFeel(nullptr);
     }
+
+    void AudioSettingsDialog::visibilityChanged()
+    {
+        if (isVisible())
+            setLookAndFeel(&lookAndFeel);
+    }
 }
