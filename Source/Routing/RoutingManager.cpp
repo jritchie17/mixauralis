@@ -98,8 +98,15 @@ int RoutingManager::getNumPhysicalInputs() const
     if (auto* app = dynamic_cast<MainApp*>(juce::JUCEApplication::getInstance()))
     {
         auto* device = app->getAudioEngine().getAudioDeviceManager().getCurrentAudioDevice();
-        return device != nullptr ? device->getInputChannelNames().size() : 0;
+
+        // Ensure the audio device exists and is currently active before querying it.
+        if (device != nullptr && device->isOpen())
+            return device->getInputChannelNames().size();
+
+        // Device is unavailable or changing
+        return 0;
     }
+
     return 0;
 }
 
