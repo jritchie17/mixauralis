@@ -454,9 +454,11 @@ void AudioEngine::loadAudioDeviceState()
     juce::AudioDeviceManager::AudioDeviceSetup cfg;
     juce::String err = deviceManager.initialise(2, 2, xml.get(), true, {}, &cfg);
     if (err.isNotEmpty())
-    {
         juce::Logger::writeToLog("Audio init error: " + err);
-        // Fallback to defaults if the saved device is unavailable
+
+    // If initialization failed or the device is unavailable, fall back to defaults
+    if (err.isNotEmpty() || deviceManager.getCurrentAudioDevice() == nullptr)
+    {
         err = deviceManager.initialiseWithDefaultDevices(2, 2);
         if (err.isNotEmpty())
             juce::Logger::writeToLog("Failed to open default devices: " + err);
