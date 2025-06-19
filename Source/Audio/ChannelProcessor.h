@@ -99,7 +99,7 @@ private:
     EQProcessor* eq = nullptr;
     CompressorProcessor* comp = nullptr;
     FXBusProcessor* fxSendBus = nullptr;  // Assigned by RoutingManager
-    std::unique_ptr<auralis::TunerProcessor> tuner;    // Owned by this class
+    auralis::TunerProcessor* tuner = nullptr;          // Owned by the graph
     
     // AudioProcessorGraph for connecting the processors
     std::unique_ptr<juce::AudioProcessorGraph> processorGraph;

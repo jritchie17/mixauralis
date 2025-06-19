@@ -63,9 +63,10 @@ void ChannelProcessor::createGraph()
     auto compProcessorCopy = std::make_unique<CompressorProcessor>();
     compNode = processorGraph->addNode(std::move(compProcessorCopy));
     
-    // Create and add tuner node
-    tuner = std::make_unique<auralis::TunerProcessor>();
-    tunerNode = processorGraph->addNode(std::move(tuner));
+    // Create and add tuner node. The graph will own the processor,
+    // but keep a raw pointer for parameter updates.
+    tunerNode = processorGraph->addNode(std::make_unique<auralis::TunerProcessor>());
+    tuner = static_cast<auralis::TunerProcessor*>(tunerNode->getProcessor());
     
     // Store pointers to processors so we can adjust parameters
     // The graph now owns the processor instances
