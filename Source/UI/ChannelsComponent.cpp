@@ -8,7 +8,6 @@ ChannelsComponent::ChannelsComponent()
     // Use global look and feel for consistency
     auto& lf = StyleManager::getInstance().getLookAndFeel();
     setLookAndFeel(&lf);
-    horizontalScrollbar.setLookAndFeel(&lf);
     
     // Load background image
     auto assetsDir = juce::File::getCurrentWorkingDirectory().getChildFile("Assets");
@@ -23,20 +22,10 @@ ChannelsComponent::ChannelsComponent()
                                     (i < 16 ? ChannelStripComponent::ChannelType::Instrument : 
                                              ChannelStripComponent::ChannelType::Other));
         
-        channelsContainer.addAndMakeVisible(channelStrip.get());
+        addAndMakeVisible(channelStrip.get());
         channelStrips.push_back(std::move(channelStrip));
     }
     
-    // Set up the viewport for horizontal scrolling
-    viewport.setViewedComponent(&channelsContainer, false);
-    viewport.setScrollBarsShown(false, false);
-    addAndMakeVisible(viewport);
-    
-    // Set up the scrollbar
-    horizontalScrollbar.setRangeLimits(0.0, 1.0);
-    horizontalScrollbar.setAutoHide(false);
-    horizontalScrollbar.addListener(this);
-    addAndMakeVisible(horizontalScrollbar);
     
     // Try to connect to the audio engine
     auto* app = dynamic_cast<MainApp*>(juce::JUCEApplication::getInstance());
@@ -51,8 +40,6 @@ ChannelsComponent::ChannelsComponent()
 
 ChannelsComponent::~ChannelsComponent()
 {
-    horizontalScrollbar.removeListener(this);
-    horizontalScrollbar.setLookAndFeel(nullptr);
     setLookAndFeel(nullptr);
 }
 
@@ -74,47 +61,19 @@ void ChannelsComponent::paint(juce::Graphics& g)
 void ChannelsComponent::resized()
 {
     auto bounds = getLocalBounds();
-    
-    // Position the scrollbar at the bottom
-    auto scrollBarHeight = 16;
-    horizontalScrollbar.setBounds(bounds.removeFromBottom(scrollBarHeight));
-    
-    // Set the viewport to take the rest of the space
-    viewport.setBounds(bounds);
-    
-    // Calculate the total width required for all channel strips
-    int totalWidth = numChannels * channelStripWidth;
-    channelsContainer.setBounds(0, 0, totalWidth, bounds.getHeight());
-    
-    // Use FlexBox for horizontal layout
-    juce::FlexBox stripRow;
-    stripRow.flexDirection = juce::FlexBox::Direction::row;
-    stripRow.justifyContent = juce::FlexBox::JustifyContent::flexStart;
-    stripRow.alignItems = juce::FlexBox::AlignItems::stretch;
-    
-    // Add each channel strip to the FlexBox
+
+    // Calculate grid dimensions
+    auto itemWidth = getWidth() / 16;
+    auto itemHeight = getHeight() / 2;
+
     for (int i = 0; i < numChannels; ++i)
     {
-        stripRow.items.add(juce::FlexItem(*channelStrips[i])
-                          .withWidth(static_cast<float>(channelStripWidth))
-                          .withHeight(static_cast<float>(bounds.getHeight())));
-    }
-    
-    // Perform the layout of channel strips (this will handle positioning)
-    stripRow.performLayout(juce::Rectangle<float>(0, 0, totalWidth, bounds.getHeight()));
-    
-    // Set up scrollbar range and current position
-    auto viewportWidth = viewport.getWidth();
-    
-    if (totalWidth > viewportWidth)
-    {
-        horizontalScrollbar.setRangeLimits(0.0, totalWidth - viewportWidth);
-        horizontalScrollbar.setCurrentRange(viewport.getViewPositionX(), viewportWidth);
-    }
-    else
-    {
-        horizontalScrollbar.setRangeLimits(0.0, 0.0);
-        horizontalScrollbar.setCurrentRange(0.0, 1.0);
+        auto row = i / 16;
+        auto col = i % 16;
+        channelStrips[i]->setBounds(col * itemWidth,
+                                    row * itemHeight,
+                                    itemWidth,
+                                    itemHeight);
     }
 }
 
@@ -172,11 +131,3 @@ void ChannelsComponent::refreshAllChannelStrips()
         strip->refreshParametersFromProcessor();
     }
 }
-
-void ChannelsComponent::scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart)
-{
-    if (scrollBarThatHasMoved == &horizontalScrollbar)
-    {
-        viewport.setViewPosition((int) newRangeStart, viewport.getViewPositionY());
-    }
-} 
