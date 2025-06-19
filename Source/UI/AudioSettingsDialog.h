@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <memory>
 #include "../Utils/BlackwayLookAndFeel.h"
 
 namespace auralis
@@ -18,7 +19,7 @@ namespace auralis
 
     private:
         juce::AudioDeviceManager& deviceManager;
-        juce::AudioDeviceSelectorComponent* selector = nullptr;
+        std::unique_ptr<juce::AudioDeviceSelectorComponent> selector;
         BlackwayLookAndFeel lookAndFeel;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioSettingsDialog)
     };

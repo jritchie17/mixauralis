@@ -11,7 +11,7 @@ namespace auralis
         setLookAndFeel(&lookAndFeel);
 
         // Create selector: wantInput=true, wantOutput=true, showMidi=false
-        selector = new juce::AudioDeviceSelectorComponent(
+        selector = std::make_unique<juce::AudioDeviceSelectorComponent>(
                         deviceManager,
                         /* minInput */   0,  /* maxInput */   256,
                         /* minOutput */  0,  /* maxOutput */  256,
@@ -20,7 +20,7 @@ namespace auralis
                         /* showChannelsAsStereoPairs */ true,
                         /* hideAdvancedOptionsWithButton */ false);
 
-        setContentOwned(selector, true);
+        setContentOwned(selector.release(), true);
         centreWithSize(500, 400);
     }
 
